@@ -12,6 +12,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
+  AWS_ROLE: arn:aws:iam::724772086149:role/github-oidc-role
   TF_WORKING_DIR: terraform/environments/dev
 
 permissions:
@@ -36,7 +37,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/sea-github-actions-role
+          role-to-assume: ${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Format Check

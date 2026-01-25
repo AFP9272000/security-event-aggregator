@@ -19,7 +19,8 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  AWS_ROLE: arn:aws:iam::724772086149:role/github-oidc-role
+  ECR_REGISTRY: 724772086149.dkr.ecr.us-east-1.amazonaws.com
   ECS_CLUSTER: sea-cluster
   PROJECT_NAME: sea
 
@@ -37,7 +38,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.PROJECT_NAME }}-github-actions-role
+          role-to-assume: ${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy API Gateway

@@ -1,243 +1,320 @@
-# Security Event Aggregator
+# 🛡️ Security Event Aggregator
 
-A containerized microservices architecture for aggregating, normalizing, and analyzing security events from multiple AWS sources. Built with Python FastAPI, Docker, and designed for deployment on AWS ECS Fargate.
+A cloud-native microservices platform for aggregating, correlating, and alerting on AWS security events. Built with Python/FastAPI, deployed on ECS Fargate with full CI/CD automation.
 
-![Architecture](docs/architecture.png)
+[![CI/CD Pipeline](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/ci-cd.yml)
+[![Terraform](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/terraform.yml/badge.svg)](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/terraform.yml)
 
-## Overview
+## 🎯 Overview
 
-The Security Event Aggregator demonstrates enterprise-grade container orchestration and security event processing patterns. It ingests security events from multiple sources (CloudTrail, GuardDuty), normalizes them to a common schema with MITRE ATT&CK mapping, correlates related events to detect attack patterns, and sends real-time alerts for high-severity incidents.
+Security Event Aggregator (SEA) processes security events from multiple AWS sources, normalizes them into a common format, detects attack patterns through correlation rules, and generates real-time alerts. This project demonstrates enterprise-grade DevSecOps practices including containerized microservices, infrastructure as code, and automated CI/CD pipelines.
 
 ### Key Features
 
-- **Multi-source Event Ingestion**: CloudTrail, GuardDuty, and custom security events
-- **MITRE ATT&CK Mapping**: Automatic classification of security events to MITRE framework
-- **Event Correlation**: Pattern detection for brute force, privilege escalation, and more
-- **Risk Scoring**: Dynamic risk calculation based on severity and correlation
-- **Real-time Alerting**: SNS notifications for high-severity events
-- **Containerized Architecture**: Production-ready Docker images with multi-stage builds
-- **Service Discovery**: AWS Cloud Map integration for inter-service communication
+- **Multi-Source Ingestion**: CloudTrail, GuardDuty, and generic security events
+- **MITRE ATT&CK Mapping**: 45+ technique mappings for threat classification
+- **Real-Time Correlation**: Detect brute force, privilege escalation, data exfiltration patterns
+- **Risk Scoring**: Quantifiable 0-100 risk scores for prioritization
+- **Automated Alerting**: SNS notifications for critical security events
+- **Full Observability**: CloudWatch dashboards, alarms, and log insights
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              VPC (10.0.0.0/16)                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                         Public Subnets                                 │ │
-│  │  ┌─────────────────┐                                                   │ │
-│  │  │       ALB       │◄──────── Internet Traffic                         │ │
-│  │  └────────┬────────┘                                                   │ │
-│  └───────────┼────────────────────────────────────────────────────────────┘ │
-│              │                                                              │
-│  ┌───────────┼────────────────────────────────────────────────────────────┐ │
-│  │           │              Private Subnets                               │ │
-│  │           ▼                                                            │ │
-│  │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐     │ │
-│  │  │   API Gateway   │───▶│  Event Ingest   │───▶│  Event Processor│     │ │
-│  │  │    Service      │    │    Service      │    │    Service      │     │ │
-│  │  │  (Port 8000)    │    │  (Port 8001)    │    │  (Port 8002)    │     │ │
-│  │  └────────┬────────┘    └────────┬────────┘    └────────┬────────┘     │ │
-│  │           │                      │                      │              │ │
-│  │           └──────────────────────┼──────────────────────┘              │ │
-│  │                                  │                                     │ │
-│  │                                  ▼                                     │ │
-│  │                    ┌─────────────────────────┐                         │ │
-│  │                    │    AWS Cloud Map        │                         │ │
-│  │                    │  (Service Discovery)    │                         │ │
-│  │                    └─────────────────────────┘                         │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────────┐│
-│  │                         Data Layer                                      ││
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  ││
-│  │  │  DynamoDB    │  │     SQS      │  │     SNS      │                  ││
-│  │  │  (Events)    │  │   (Queue)    │  │   (Alerts)   │                  ││
-│  │  └──────────────┘  └──────────────┘  └──────────────┘                  ││
-│  └─────────────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────────┘
+│                              AWS Cloud                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│    ┌──────────────┐                                                         │
+│    │   Route 53   │ (Optional)                                              │
+│    └──────┬───────┘                                                         │
+│           │                                                                  │
+│    ┌──────▼───────┐      ┌─────────────────────────────────────────────┐   │
+│    │     ALB      │      │            VPC (10.0.0.0/16)                 │   │
+│    │  (Public)    │      │  ┌─────────────────────────────────────────┐│   │
+│    └──────┬───────┘      │  │         Private Subnets                 ││   │
+│           │              │  │                                          ││   │
+│           │              │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐   ││   │
+│           └──────────────┼──┼─►│   API   │ │  Event  │ │  Event  │   ││   │
+│                          │  │  │ Gateway │ │ Ingest  │ │Processor│   ││   │
+│                          │  │  │ :8000   │ │ :8001   │ │ :8002   │   ││   │
+│                          │  │  └────┬────┘ └────┬────┘ └────┬────┘   ││   │
+│                          │  │       │           │           │        ││   │
+│                          │  │       │    Cloud Map Service Discovery ││   │
+│                          │  └───────┼───────────┼───────────┼────────┘│   │
+│                          └──────────┼───────────┼───────────┼─────────┘   │
+│                                     │           │           │              │
+│    ┌────────────────────────────────┼───────────┼───────────┼────────────┐│
+│    │                                ▼           ▼           ▼            ││
+│    │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐             ││
+│    │  │  DynamoDB   │◄───│     SQS     │◄───│     SNS     │             ││
+│    │  │  (Events)   │    │   (Queue)   │    │  (Alerts)   │             ││
+│    │  └─────────────┘    └─────────────┘    └─────────────┘             ││
+│    │                         Data Layer                                  ││
+│    └─────────────────────────────────────────────────────────────────────┘│
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Microservices
+### Microservices
 
-### 1. API Gateway Service (Port 8000)
-External-facing REST API for querying security events.
+| Service | Port | Responsibility |
+|---------|------|----------------|
+| **API Gateway** | 8000 | REST API for querying events, stats, and search |
+| **Event Ingest** | 8001 | Receives and normalizes security events |
+| **Event Processor** | 8002 | Correlation engine, risk scoring, alerting |
 
-**Endpoints:**
-- `GET /events` - List events with filters
-- `GET /events/{id}` - Get specific event
-- `GET /events/stats` - Dashboard statistics
-- `POST /events/search` - Advanced search
-- `GET /health` - Health check
+## 🔐 Security Features
 
-### 2. Event Ingest Service (Port 8001)
-Receives and normalizes security events from various sources.
+### MITRE ATT&CK Mappings
 
-**Endpoints:**
-- `POST /ingest/cloudtrail` - Ingest CloudTrail events
-- `POST /ingest/guardduty` - Ingest GuardDuty findings
-- `POST /ingest/generic` - Ingest custom events
-- `GET /health` - Health check
+The system maps security events to MITRE ATT&CK techniques:
 
-### 3. Event Processor Service (Port 8002)
-Async processing, correlation, and alerting.
+| Tactic | Example Techniques |
+|--------|-------------------|
+| Initial Access | T1078 (Valid Accounts) |
+| Persistence | T1136.003 (Create Cloud Account) |
+| Privilege Escalation | T1548 (Abuse Elevation Control) |
+| Defense Evasion | T1562.008 (Disable Cloud Logs) |
+| Credential Access | T1528 (Steal Application Access Token) |
+| Discovery | T1580 (Cloud Infrastructure Discovery) |
+| Exfiltration | T1530 (Data from Cloud Storage) |
+| Impact | T1485 (Data Destruction) |
 
-**Features:**
-- SQS message polling
-- Event correlation patterns
-- Risk score calculation
-- SNS alert triggering
+### Correlation Rules
 
-## Quick Start
+| Rule | Description | Severity |
+|------|-------------|----------|
+| **Brute Force** | ≥5 failed logins in 15 min | HIGH |
+| **Privilege Escalation** | Login → Create access key/user in 60 min | CRITICAL |
+| **Data Exfiltration** | ≥50 S3 GetObject in 30 min | HIGH |
+| **Logging Tampering** | StopLogging, DeleteTrail events | CRITICAL |
+| **Reconnaissance** | ≥20 List/Describe calls in 10 min | MEDIUM |
+
+### Risk Scoring
+
+Events receive a 0-100 risk score based on:
+- Base severity (Critical=80, High=60, Medium=40, Low=20)
+- +20 per correlation match
+- +10 for MITRE ATT&CK mapping
+- +30 for root account activity
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
-- Python 3.11+ (for running tests)
-- AWS CLI (optional, for LocalStack interaction)
+
+- AWS CLI configured with appropriate credentials
+- Terraform >= 1.5.0
+- Docker Desktop
+- Git
 
 ### Local Development
 
-1. **Clone and navigate to project:**
-   ```bash
-   cd security-event-aggregator
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/AFP9272000/security-event-aggregator.git
+cd security-event-aggregator
 
-2. **Start all services:**
-   ```bash
-   docker-compose up -d
-   ```
+# Start with Docker Compose (uses LocalStack)
+docker-compose up -d
 
-3. **Wait for services to be ready (~30 seconds):**
-   ```bash
-   docker-compose logs -f
-   ```
+# Wait for services to be healthy
+sleep 30
 
-4. **Run integration tests:**
-   ```bash
-   pip install requests
-   python test_services.py
-   ```
+# Test the API
+curl http://localhost:8000/health
+curl http://localhost:8000/events/stats
 
-5. **Explore the APIs:**
-   - API Gateway: http://localhost:8000/docs
-   - Event Ingest: http://localhost:8001/docs
-   - Event Processor: http://localhost:8002/docs
+# Run the test script
+python test_services.py
+```
 
-### Sample API Calls
+### Deploy to AWS
 
-**Ingest a CloudTrail event:**
+```bash
+# Navigate to Terraform
+cd terraform/environments/dev
+
+# Configure your variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your settings
+
+# Deploy
+terraform init
+terraform plan
+terraform apply
+
+# Get the API URL
+terraform output api_url
+```
+
+## 📡 API Reference
+
+### Events API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/events` | GET | List events with filters |
+| `/events/stats` | GET | Aggregated statistics |
+| `/events/{id}` | GET | Get specific event |
+| `/events/search` | POST | Advanced search |
+| `/events/severity/{level}` | GET | Filter by severity |
+| `/events/source/{source}` | GET | Filter by source |
+
+### Ingestion API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ingest/cloudtrail` | POST | Ingest CloudTrail events |
+| `/ingest/guardduty` | POST | Ingest GuardDuty findings |
+| `/ingest/generic` | POST | Ingest generic events |
+
+### Example: Ingest CloudTrail Event
+
 ```bash
 curl -X POST http://localhost:8001/ingest/cloudtrail \
   -H "Content-Type: application/json" \
   -d '{
-    "events": [{
-      "eventName": "ConsoleLogin",
-      "eventSource": "signin.amazonaws.com",
-      "userIdentity": {"type": "IAMUser", "userName": "alice"},
-      "sourceIPAddress": "203.0.113.50",
-      "eventTime": "2024-01-15T10:30:00Z"
-    }]
+    "event_id": "evt-123",
+    "event_time": "2025-01-25T12:00:00Z",
+    "event_source": "signin.amazonaws.com",
+    "event_name": "ConsoleLogin",
+    "aws_region": "us-east-1",
+    "source_ip": "1.2.3.4",
+    "user_identity": {
+      "type": "IAMUser",
+      "userName": "admin"
+    },
+    "response_elements": {
+      "ConsoleLogin": "Success"
+    }
   }'
 ```
 
-**Query events:**
-```bash
-curl http://localhost:8000/events?severity=high
+## 🏭 Infrastructure
+
+### Terraform Modules
+
+| Module | Resources |
+|--------|-----------|
+| `vpc` | VPC, subnets, NAT Gateway, VPC endpoints |
+| `ecr` | Container registries with lifecycle policies |
+| `ecs` | Fargate cluster, task definitions, services |
+| `alb` | Application Load Balancer, target groups |
+| `dynamodb` | Events table with GSIs |
+| `sqs` | Event queue, dead-letter queue |
+| `iam` | Task roles, GitHub OIDC |
+| `cloudmap` | Service discovery namespace |
+| `monitoring` | CloudWatch dashboards, alarms |
+
+### Cost Estimate (Dev Environment)
+
+| Resource | Monthly Cost |
+|----------|-------------|
+| NAT Gateway | ~$32 |
+| ALB | ~$16 |
+| Fargate (3 tasks, Spot) | ~$10-15 |
+| DynamoDB (on-demand) | ~$1-5 |
+| VPC Endpoints | ~$7-14 |
+| CloudWatch | ~$5 |
+| **Total** | **~$70-85/month** |
+
+## 🔄 CI/CD Pipeline
+
+The GitHub Actions pipeline includes:
+
+```
+Push to main
+    │
+    ├─► Security Scan (Trivy + Checkov)
+    │
+    ├─► Build & Test (parallel x3 services)
+    │
+    ├─► Push to ECR
+    │
+    ├─► Deploy to ECS
+    │
+    └─► Integration Tests
 ```
 
-**Get statistics:**
-```bash
-curl http://localhost:8000/events/stats
-```
+### Workflows
 
-## Event Schema
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci-cd.yml` | Push to main | Full pipeline |
+| `terraform.yml` | Changes to `terraform/` | Infrastructure updates |
+| `manual-deploy.yml` | Manual | Deploy specific services |
 
-All events are normalized to a common schema:
+### Required Secrets
 
-```json
-{
-  "event_id": "uuid",
-  "source": "cloudtrail|guardduty|custom",
-  "event_time": "2024-01-15T10:30:00Z",
-  "event_type": "ConsoleLogin",
-  "event_category": "authentication",
-  "severity": "critical|high|medium|low|info",
-  "title": "CloudTrail: ConsoleLogin",
-  "description": "User alice logged in from 203.0.113.50",
-  "aws_context": {
-    "account_id": "123456789012",
-    "region": "us-east-1",
-    "service": "signin"
-  },
-  "actor": {
-    "user_name": "alice",
-    "principal_type": "IAMUser"
-  },
-  "network": {
-    "source_ip": "203.0.113.50"
-  },
-  "mitre_attack": {
-    "tactic": "Initial Access",
-    "technique_id": "T1078",
-    "technique_name": "Valid Accounts"
-  }
-}
-```
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCOUNT_ID` | Your 12-digit AWS account ID |
 
-## Correlation Patterns
+## 📊 Monitoring
 
-The Event Processor detects these attack patterns:
+### CloudWatch Dashboard
 
-| Pattern | Description | Events |
-|---------|-------------|--------|
-| Brute Force | Multiple failed login attempts | 5+ ConsoleLogin failures in 15 min |
-| Privilege Escalation | IAM changes after login | ConsoleLogin → CreateAccessKey |
-| Logging Tampering | CloudTrail modifications | StopLogging, DeleteTrail |
-| Reconnaissance | Discovery API enumeration | 20+ List/Describe calls in 10 min |
+Access via: `https://console.aws.amazon.com/cloudwatch/home#dashboards:name=sea-dashboard`
 
-## MITRE ATT&CK Mapping
+Includes:
+- ECS CPU/Memory utilization
+- Running task counts
+- ALB request metrics and latency
+- DynamoDB read/write capacity
+- SQS queue depth
+- Security event logs
 
-Events are automatically mapped to MITRE ATT&CK:
+### Alarms
 
-| Event Type | Tactic | Technique |
-|------------|--------|-----------|
-| ConsoleLogin | Initial Access | T1078 - Valid Accounts |
-| CreateAccessKey | Persistence | T1098.001 - Additional Cloud Credentials |
-| StopLogging | Defense Evasion | T1562.008 - Disable Cloud Logs |
-| GetSecretValue | Credential Access | T1555 - Credentials from Password Stores |
+| Alarm | Threshold | Action |
+|-------|-----------|--------|
+| High CPU | >80% for 10 min | SNS alert |
+| 5XX Errors | >10 in 5 min | SNS alert |
+| High Latency | >2s avg | SNS alert |
+| Queue Backup | >100 messages | SNS alert |
+| Critical Events | Any | SNS alert |
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 security-event-aggregator/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd.yml           # Main CI/CD pipeline
+│       ├── terraform.yml       # Infrastructure CI
+│       └── manual-deploy.yml   # Manual deployment
 ├── services/
-│   ├── api-gateway/
+│   ├── api-gateway/            # REST API service
 │   │   ├── Dockerfile
 │   │   ├── requirements.txt
 │   │   └── src/
 │   │       ├── main.py
-│   │       ├── routes/events.py
-│   │       ├── models/events.py
-│   │       └── utils/dynamodb.py
-│   ├── event-ingest/
+│   │       ├── routes/
+│   │       ├── models/
+│   │       └── utils/
+│   ├── event-ingest/           # Ingestion service
 │   │   ├── Dockerfile
 │   │   ├── requirements.txt
 │   │   └── src/
 │   │       ├── main.py
-│   │       ├── normalizers/
-│   │       │   ├── cloudtrail.py
-│   │       │   └── guardduty.py
-│   │       └── models/events.py
-│   └── event-processor/
+│   │       ├── normalizers/    # CloudTrail, GuardDuty
+│   │       └── models/
+│   └── event-processor/        # Processing service
 │       ├── Dockerfile
 │       ├── requirements.txt
 │       └── src/
 │           ├── main.py
-│           ├── correlators/correlator.py
-│           ├── alerting/alerts.py
-│           └── models/events.py
+│           ├── correlators/    # Attack pattern detection
+│           ├── alerting/       # SNS notifications
+│           └── models/
 ├── terraform/
-│   ├── environments/dev/
+│   ├── environments/
+│   │   └── dev/
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       └── outputs.tf
 │   └── modules/
 │       ├── vpc/
 │       ├── ecr/
@@ -245,63 +322,45 @@ security-event-aggregator/
 │       ├── alb/
 │       ├── dynamodb/
 │       ├── sqs/
+│       ├── iam/
+│       ├── cloudmap/
 │       └── monitoring/
-├── .github/workflows/
-│   └── deploy.yml
-├── docker-compose.yml
-├── localstack-init/
-│   └── init-aws.sh
-├── test_services.py
+├── docker-compose.yml          # Local development
+├── test_services.py            # Integration tests
 └── README.md
 ```
 
-## AWS Deployment
+## 🛠️ Technologies
 
-See [terraform/README.md](terraform/README.md) for full deployment instructions.
+| Category | Technologies |
+|----------|-------------|
+| **Languages** | Python 3.11 |
+| **Frameworks** | FastAPI, Pydantic, Boto3 |
+| **Containers** | Docker, ECS Fargate |
+| **Infrastructure** | Terraform, VPC, ALB |
+| **Data** | DynamoDB, SQS, SNS |
+| **CI/CD** | GitHub Actions, OIDC |
+| **Security** | Trivy, Checkov, IAM |
+| **Monitoring** | CloudWatch, Container Insights |
 
-### Quick Deploy
+## 🤝 Contributing
 
-```bash
-cd terraform/environments/dev
-terraform init
-terraform plan
-terraform apply
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### Required AWS Resources
-- VPC with public/private subnets
-- ECS Cluster (Fargate)
-- ECR Repositories (3)
-- Application Load Balancer
-- DynamoDB Table
-- SQS Queue
-- SNS Topic
-- IAM Roles and Policies
-- Security Groups
-- Cloud Map Namespace
+## 📄 License
 
-## Security Features
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-- **Network Isolation**: Services run in private subnets
-- **Least Privilege IAM**: Minimal permissions per service
-- **Non-root Containers**: All containers run as non-root user
-- **Secrets Management**: AWS Secrets Manager integration
-- **Security Scanning**: Trivy and Checkov in CI/CD
-- **Encrypted Data**: DynamoDB encryption at rest
+## 👤 Author
 
-## Skills Demonstrated
+**Addison Plunkett**
+- GitHub: [@AFP9272000](https://github.com/AFP9272000)
+- LinkedIn: [Addison Plunkett](https://www.linkedin.com/in/addison-plunkett/)
 
-- **Containers & Docker**: Multi-stage builds, health checks, non-root users
-- **Microservices Architecture**: Service discovery, async messaging, API design
-- **AWS Services**: ECS Fargate, DynamoDB, SQS, SNS, ALB, Cloud Map
-- **Infrastructure as Code**: Terraform modules and environments
-- **CI/CD**: GitHub Actions with OIDC authentication
-- **Security**: MITRE ATT&CK, event correlation, threat detection
+---
 
-## License
-
-MIT License - See [LICENSE](LICENSE) for details.
-
-## Author
-
-Built as part of a cloud security engineering portfolio demonstrating containerization and microservices skills.
+*Built as a portfolio project demonstrating cloud security engineering and DevSecOps practices.*
