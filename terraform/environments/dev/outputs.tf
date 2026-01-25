@@ -85,6 +85,14 @@ output "service_discovery_namespace" {
 }
 
 #------------------------------------------------------------------------------
+# Monitoring
+#------------------------------------------------------------------------------
+output "cloudwatch_dashboard_url" {
+  description = "URL to CloudWatch dashboard"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${module.monitoring.dashboard_name}"
+}
+
+#------------------------------------------------------------------------------
 # CI/CD
 #------------------------------------------------------------------------------
 output "github_actions_role_arn" {

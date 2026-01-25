@@ -206,3 +206,20 @@ module "ecs" {
 
   tags = local.tags
 }
+
+#------------------------------------------------------------------------------
+# Monitoring Module
+#------------------------------------------------------------------------------
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  project_name        = var.project_name
+  aws_region          = var.aws_region
+  ecs_cluster_name    = module.ecs.cluster_name
+  alb_arn_suffix      = module.alb.alb_arn_suffix
+  dynamodb_table_name = module.dynamodb.table_name
+  sqs_queue_name      = module.sqs.queue_name
+  sns_topic_arn       = module.sqs.sns_topic_arn
+
+  tags = local.tags
+}
