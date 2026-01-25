@@ -1,0 +1,98 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        required: true
+        type: choice
+        options:
+          - all
+          - api-gateway
+          - event-ingest
+          - event-processor
+      image_tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  ECS_CLUSTER: sea-cluster
+  PROJECT_NAME: sea
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ github.event.inputs.service }}
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.PROJECT_NAME }}-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy API Gateway
+        if: github.event.inputs.service == 'all' || github.event.inputs.service == 'api-gateway'
+        run: |
+          echo "🚀 Deploying API Gateway..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.PROJECT_NAME }}-api-gateway \
+            --force-new-deployment
+          
+          echo "⏳ Waiting for deployment to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.PROJECT_NAME }}-api-gateway
+          echo "✅ API Gateway deployed successfully"
+
+      - name: Deploy Event Ingest
+        if: github.event.inputs.service == 'all' || github.event.inputs.service == 'event-ingest'
+        run: |
+          echo "🚀 Deploying Event Ingest..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.PROJECT_NAME }}-event-ingest \
+            --force-new-deployment
+          
+          echo "⏳ Waiting for deployment to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.PROJECT_NAME }}-event-ingest
+          echo "✅ Event Ingest deployed successfully"
+
+      - name: Deploy Event Processor
+        if: github.event.inputs.service == 'all' || github.event.inputs.service == 'event-processor'
+        run: |
+          echo "🚀 Deploying Event Processor..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.PROJECT_NAME }}-event-processor \
+            --force-new-deployment
+          
+          echo "⏳ Waiting for deployment to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.PROJECT_NAME }}-event-processor
+          echo "✅ Event Processor deployed successfully"
+
+      - name: Get deployment status
+        run: |
+          echo "📊 Current ECS Service Status:"
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services \
+              ${{ env.PROJECT_NAME }}-api-gateway \
+              ${{ env.PROJECT_NAME }}-event-ingest \
+              ${{ env.PROJECT_NAME }}-event-processor \
+            --query 'services[*].{Service:serviceName,Status:status,Running:runningCount,Desired:desiredCount}' \
+            --output table

@@ -1,0 +1,103 @@
+version: '3.8'
+
+# Security Event Aggregator - Local Development Environment
+# Uses LocalStack to emulate AWS services locally
+
+services:
+  # LocalStack - AWS service emulation
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: sea-localstack
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=dynamodb,sqs,sns
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "./localstack-init:/etc/localstack/init/ready.d"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: sea-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AWS_REGION=us-east-1
+      - DYNAMODB_TABLE=security-events
+      - LOCALSTACK_ENDPOINT=http://localstack:4566
+      - EVENT_INGEST_URL=http://event-ingest:8001
+      - EVENT_PROCESSOR_URL=http://event-processor:8002
+      - DEBUG=true
+    depends_on:
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Event Ingest Service
+  event-ingest:
+    build:
+      context: ./services/event-ingest
+      dockerfile: Dockerfile
+    container_name: sea-event-ingest
+    ports:
+      - "8001:8001"
+    environment:
+      - AWS_REGION=us-east-1
+      - DYNAMODB_TABLE=security-events
+      - SQS_QUEUE_URL=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/security-events-queue
+      - LOCALSTACK_ENDPOINT=http://localstack:4566
+      - DEBUG=true
+    depends_on:
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Event Processor Service
+  event-processor:
+    build:
+      context: ./services/event-processor
+      dockerfile: Dockerfile
+    container_name: sea-event-processor
+    ports:
+      - "8002:8002"
+    environment:
+      - AWS_REGION=us-east-1
+      - DYNAMODB_TABLE=security-events
+      - SQS_QUEUE_URL=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/security-events-queue
+      - SNS_TOPIC_ARN=arn:aws:sns:us-east-1:000000000000:security-alerts
+      - LOCALSTACK_ENDPOINT=http://localstack:4566
+      - BATCH_SIZE=10
+      - POLL_INTERVAL_SECONDS=5
+      - CORRELATION_WINDOW_MINUTES=60
+      - DEBUG=true
+    depends_on:
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: sea-network
