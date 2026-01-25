@@ -1,7 +1,3 @@
-#------------------------------------------------------------------------------
-# Security Event Aggregator - Dev Environment Configuration
-# Copy this to terraform.tfvars and customize for your deployment
-#------------------------------------------------------------------------------
 
 # General
 project_name = "sea"
