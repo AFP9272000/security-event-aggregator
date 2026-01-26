@@ -1,11 +1,11 @@
-# 🛡️ Security Event Aggregator
+# Security Event Aggregator
 
 A cloud-native microservices platform for aggregating, correlating, and alerting on AWS security events. Built with Python/FastAPI, deployed on ECS Fargate with full CI/CD automation.
 
 [![CI/CD Pipeline](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/ci-cd.yml)
 [![Terraform](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/terraform.yml/badge.svg)](https://github.com/AFP9272000/security-event-aggregator/actions/workflows/terraform.yml)
 
-## 🎯 Overview
+## Overview
 
 Security Event Aggregator (SEA) processes security events from multiple AWS sources, normalizes them into a common format, detects attack patterns through correlation rules, and generates real-time alerts. This project demonstrates enterprise-grade DevSecOps practices including containerized microservices, infrastructure as code, and automated CI/CD pipelines.
 
@@ -18,7 +18,7 @@ Security Event Aggregator (SEA) processes security events from multiple AWS sour
 - **Automated Alerting**: SNS notifications for critical security events
 - **Full Observability**: CloudWatch dashboards, alarms, and log insights
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -64,7 +64,7 @@ Security Event Aggregator (SEA) processes security events from multiple AWS sour
 | **Event Ingest** | 8001 | Receives and normalizes security events |
 | **Event Processor** | 8002 | Correlation engine, risk scoring, alerting |
 
-## 🔐 Security Features
+## Security Features
 
 ### MITRE ATT&CK Mappings
 
@@ -99,7 +99,7 @@ Events receive a 0-100 risk score based on:
 - +10 for MITRE ATT&CK mapping
 - +30 for root account activity
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -148,7 +148,7 @@ terraform apply
 terraform output api_url
 ```
 
-## 📡 API Reference
+## API Reference
 
 ### Events API
 
@@ -192,7 +192,7 @@ curl -X POST http://localhost:8001/ingest/cloudtrail \
   }'
 ```
 
-## 🏭 Infrastructure
+## Infrastructure
 
 ### Terraform Modules
 
@@ -220,7 +220,7 @@ curl -X POST http://localhost:8001/ingest/cloudtrail \
 | CloudWatch | ~$5 |
 | **Total** | **~$70-85/month** |
 
-## 🔄 CI/CD Pipeline
+## CI/CD Pipeline
 
 The GitHub Actions pipeline includes:
 
@@ -252,7 +252,7 @@ Push to main
 |--------|-------------|
 | `AWS_ACCOUNT_ID` | Your 12-digit AWS account ID |
 
-## 📊 Monitoring
+## Monitoring
 
 ### CloudWatch Dashboard
 
@@ -276,7 +276,7 @@ Includes:
 | Queue Backup | >100 messages | SNS alert |
 | Critical Events | Any | SNS alert |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 security-event-aggregator/
@@ -330,7 +330,7 @@ security-event-aggregator/
 └── README.md
 ```
 
-## 🛠️ Technologies
+## Technologies
 
 | Category | Technologies |
 |----------|-------------|
@@ -343,23 +343,15 @@ security-event-aggregator/
 | **Security** | Trivy, Checkov, IAM |
 | **Monitoring** | CloudWatch, Container Insights |
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👤 Author
+## Author
 
-**Addison Plunkett**
+**Addison Pirlo**
 - GitHub: [@AFP9272000](https://github.com/AFP9272000)
-- LinkedIn: [Addison Plunkett](https://www.linkedin.com/in/addison-plunkett/)
+- LinkedIn: [Addison Plunkett](www.linkedin.com/in/addison-p-6406b225b)
 
 ---
 
