@@ -351,7 +351,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Addison Pirlo**
 - GitHub: [@AFP9272000](https://github.com/AFP9272000)
-- LinkedIn: [Addison Plunkett](www.linkedin.com/in/addison-p-6406b225b)
+- LinkedIn: [Addison Pirlo](www.linkedin.com/in/addison-p-6406b225b)
 
 ---
 
