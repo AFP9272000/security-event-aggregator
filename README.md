@@ -319,6 +319,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - GitHub: [@AFP9272000](https://github.com/AFP9272000)
 - LinkedIn: [Addison Pirlo](www.linkedin.com/in/addison-p-6406b225b)
 
----
+--- 
 
 *Built as a portfolio project demonstrating cloud security engineering and DevSecOps practices.*
